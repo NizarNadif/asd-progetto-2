@@ -1,0 +1,7 @@
+# Windows and Linux executables
+*.out
+*.exe
+
+# Outputs default name
+*.txt
+*.png
