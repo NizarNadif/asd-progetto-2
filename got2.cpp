@@ -9,15 +9,13 @@ using namespace std;
 typedef pair<int,int> entry;
 typedef list<entry> entrylist;
 
-const pair<entrylist,entrylist> sol(bool **const, const int);
+const pair<entrylist,entrylist> sol(bool **const, const int, int &, int &);
+void printsol(ofstream *, int, int, pair<entrylist,entrylist>);
 
 // utils
 bool **allocMatrix(const int);
 void deallocMatrix(bool **, const int);
 void printMatrix(bool **const, const int);
-
-// A = create, R = distrutte
-int A = 0, R = 0;
 
 int main (int argc, char *argv[]) {
     ifstream in;
@@ -72,22 +70,11 @@ int main (int argc, char *argv[]) {
     #endif
 
     // ---------------- SOLUZIONE ----------------
-    const pair<entrylist,entrylist> S = sol(g, N);
+    int A = 0, R = 0;
+    const pair<entrylist,entrylist> S = sol(g, N, A, R);
     // ------------- FINE SOLUZIONE --------------
 
-    // stampo la soluzione
-    out << A << " " << R << endl;
-
-    for (entry couple : S.first) {
-        out << "+ " << couple.first << " " << couple.second << endl;
-    }
-
-    for (entry couple : S.second) {
-        out << "- " << couple.first << " " << couple.second << endl;
-    }
-    
-    // chiudo la stampa
-    out << "***" << endl;
+    printsol(&out, A, R, S);
 
     #ifdef IMG
     for (entry couple : S.first) {
@@ -119,7 +106,7 @@ const pair<entrylist, entrylist> dummysol(const int);
  * @return una coppia di liste (As e Rs), ognuna di esse contiene
  *  delle coppie di interi che rappresentano un arco aggiunto/eliminato
  */
-const pair<entrylist,entrylist> sol(bool **const g, const int N) {
+const pair<entrylist,entrylist> sol(bool **const g, const int N, int &A, int &R) {
     entrylist As, Rs;
     return dummysol(N);
 }
@@ -135,6 +122,22 @@ const pair<entrylist, entrylist> dummysol(const int N) {
 
     return make_pair(As, Rs);
 };
+
+void printsol (ofstream *out, int A, int R, pair<entrylist, entrylist> S) {
+    // stampo la soluzione
+    *out << A << " " << R << endl;
+
+    for (entry couple : S.first) {
+        *out << "+ " << couple.first << " " << couple.second << endl;
+    }
+
+    for (entry couple : S.second) {
+        *out << "- " << couple.first << " " << couple.second << endl;
+    }
+    
+    // chiudo la stampa
+    *out << "***" << endl;
+}
 
 
 // ----------------------------- UTILS -----------------------------
