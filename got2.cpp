@@ -1,8 +1,4 @@
-#include <iostream>
-#include <fstream>
-#include <utility>
-#include <list>
-#include <iomanip>
+#include <bits/stdc++.h>
 
 using namespace std;
 
@@ -16,6 +12,9 @@ void printsol(ofstream *, int, int, pair<entrylist,entrylist>);
 bool **allocMatrix(const int);
 void deallocMatrix(bool **, const int);
 void printMatrix(bool **const, const int);
+// utils per i grafi
+int * cc(bool **const, const int, int &);
+vector<int> getCC(const int *, const int, const int);
 
 int main (int argc, char *argv[]) {
     ifstream in;
@@ -51,7 +50,7 @@ int main (int argc, char *argv[]) {
         }
     }
 
-    for (int i=1; i<M; i++) {
+    for (int i=0; i<M; i++) {
         // NB: il grafo non è orientato
         int u, v;
         in >> u >> v;
@@ -107,7 +106,16 @@ const pair<entrylist, entrylist> dummysol(const int);
  *  delle coppie di interi che rappresentano un arco aggiunto/eliminato
  */
 const pair<entrylist,entrylist> sol(bool **const g, const int N, int &A, int &R) {
-    entrylist As, Rs;
+    int n_componenti;
+    int *id = cc(g, N, n_componenti);
+    cout << "le componenti connesse sono " << n_componenti << endl;
+
+    for (int i=1; i<=n_componenti; i++) {
+        vector<int> cc = getCC(id, N, i);
+
+        // SOLUZIONE SULLA COMPONENTE  CONNESSA i-esima
+    }
+
     return dummysol(N);
 }
 
@@ -141,6 +149,51 @@ void printsol (ofstream *out, int A, int R, pair<entrylist, entrylist> S) {
 
 
 // ----------------------------- UTILS -----------------------------
+void ccdfs(bool **const, const int, const int, const int, int *);
+
+// graph utilts
+int * cc(bool **const g, const int N, int &n_componenti) {
+    // creo lo stack e lo riempio con tutti i nodi
+    stack<int> s;
+    for (int i=0; i<N; i++) s.push(i);
+
+    // definisco l'array IDs 
+    int *id = new int[N];
+    n_componenti = 0;
+    for (int i=0; i<N; i++) id[i] = 0;
+
+    // finché lo stack non è vuoto
+    while (!s.empty()) {
+        // prendo il primo nodo
+        int u = s.top();
+        s.pop();
+
+        if (id[u] == 0) {
+            n_componenti++;
+            ccdfs(g, N, n_componenti, u, id);
+        }
+    }
+    return id;
+}
+
+void ccdfs(bool **const g, const int N, const int conta, const int node, int *id) {
+    id[node] = conta;
+    for (int i=0; i<N; i++) {
+        if (g[node][i] && id[i] == 0) {
+            ccdfs(g, N, conta, i, id);
+        }
+    }
+}
+
+vector<int> getCC(const int *id, const int N, const int comp) {
+    vector<int> cc;
+    for (int i=0; i<N; i++)
+        if (id[i] == comp)
+            cc.push_back(i);
+    return cc;
+}
+
+
 bool **allocMatrix(const int N) {
     bool **matrix = new bool*[N];
     for (int i = 0; i<N; i++)
