@@ -105,20 +105,20 @@ const pair<entrylist, entrylist> dummysol(const int);
  *  delle coppie di interi che rappresentano un arco aggiunto/eliminato
  */
 const pair<entrylist,entrylist> sol(bool **const g, const int N) {
-    int n_componenti;
-    int *id = cc(g, N, n_componenti);
+    entrylist As, Rs;
+    int n_componenti, *id = cc(g, N, n_componenti);
     
     #ifdef DEBUG
     cout << "le componenti connesse sono " << n_componenti << endl;
     #endif
 
-    for (int i=1; i<=n_componenti; i++) {
-        vector<int> cc = getCC(id, N, i);
+    for (int c=1; c<=n_componenti; c++) {
+        vector<int> cc = getCC(id, N, c);
 
         // SOLUZIONE SULLA COMPONENTE  CONNESSA i-esima
     }
 
-    return dummysol(N);
+    return make_pair(As, Rs);
 }
 
 const pair<entrylist, entrylist> dummysol(const int N) {
