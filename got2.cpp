@@ -5,8 +5,8 @@ using namespace std;
 typedef pair<int,int> entry;
 typedef list<entry> entrylist;
 
-const pair<entrylist,entrylist> sol(bool **const, const int, int &, int &);
-void printsol(ofstream *, int, int, pair<entrylist,entrylist>);
+const pair<entrylist,entrylist> sol(bool **const, const int);
+void printsol(ofstream *, pair<entrylist,entrylist>);
 
 // utils
 bool **allocMatrix(const int);
@@ -69,11 +69,10 @@ int main (int argc, char *argv[]) {
     #endif
 
     // ---------------- SOLUZIONE ----------------
-    int A = 0, R = 0;
-    const pair<entrylist,entrylist> S = sol(g, N, A, R);
+    const pair<entrylist,entrylist> S = sol(g, N);
     // ------------- FINE SOLUZIONE --------------
 
-    printsol(&out, A, R, S);
+    printsol(&out, S);
 
     #ifdef IMG
     for (entry couple : S.first) {
@@ -105,7 +104,7 @@ const pair<entrylist, entrylist> dummysol(const int);
  * @return una coppia di liste (As e Rs), ognuna di esse contiene
  *  delle coppie di interi che rappresentano un arco aggiunto/eliminato
  */
-const pair<entrylist,entrylist> sol(bool **const g, const int N, int &A, int &R) {
+const pair<entrylist,entrylist> sol(bool **const g, const int N) {
     int n_componenti;
     int *id = cc(g, N, n_componenti);
     cout << "le componenti connesse sono " << n_componenti << endl;
@@ -131,9 +130,9 @@ const pair<entrylist, entrylist> dummysol(const int N) {
     return make_pair(As, Rs);
 };
 
-void printsol (ofstream *out, int A, int R, pair<entrylist, entrylist> S) {
+void printsol (ofstream *out, pair<entrylist, entrylist> S) {
     // stampo la soluzione
-    *out << A << " " << R << endl;
+    *out << S.first.size() << " " << S.second.size() << endl;
 
     for (entry couple : S.first) {
         *out << "+ " << couple.first << " " << couple.second << endl;
