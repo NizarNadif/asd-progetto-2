@@ -107,7 +107,10 @@ const pair<entrylist, entrylist> dummysol(const int);
 const pair<entrylist,entrylist> sol(bool **const g, const int N) {
     int n_componenti;
     int *id = cc(g, N, n_componenti);
+    
+    #ifdef DEBUG
     cout << "le componenti connesse sono " << n_componenti << endl;
+    #endif
 
     for (int i=1; i<=n_componenti; i++) {
         vector<int> cc = getCC(id, N, i);
