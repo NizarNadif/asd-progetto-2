@@ -116,6 +116,16 @@ const pair<entrylist,entrylist> sol(bool **const g, const int N) {
         vector<int> cc = getCC(id, N, c);
 
         // SOLUZIONE SULLA COMPONENTE  CONNESSA i-esima
+        for (int i=0; i<cc.size(); i++) {
+            int u = cc[i];
+            for (int v : cc) {
+                if (u != v && !g[u][v]) {
+                    As.push_back(make_pair(u, v));
+                }
+            }
+            // rimuovo u affinché non vengano ricreati gli stessi archi
+            cc.erase(cc.begin() + i);
+        }
     }
 
     return make_pair(As, Rs);
