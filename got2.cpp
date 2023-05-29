@@ -11,8 +11,10 @@ struct ccomp {
     int n_edges;
 };
 
-const pair<entrylist,entrylist> sol(bool **const, const int);
+const pair<entrylist,entrylist> sol(const int);
 void printsol(ofstream *, pair<entrylist,entrylist>);
+
+bool** g;
 
 // utils
 bool **allocMatrix(const int);
@@ -24,7 +26,7 @@ vector<ccomp> cc(bool **const, const int, int &);
 vector<int> getCC(const int *, const int, const int);
 int getEdges(bool **const, const vector<int>, const int);
 
-const double CUT_OFF = 0.6;
+const double CUT_OFF = 0.9;
 
 int N, M;
 
@@ -317,13 +319,10 @@ const pair<entrylist, entrylist> sol(const int N)
 
     for (ccomp ccsingola : ccs) {
 
-        // SOLUZIONE SULLA COMPONENTE  CONNESSA i-esima
-        cout << cc.nodi.size() << " con n archi = " << cc.n_edges << endl; 
-
             vector<int> cc = ccsingola.nodi;
             // Qui avremo il numero di archi della CC
             // DA CAMBIARE DA 0 A NUMERO DEGLI ARCHI DELLA CC
-            int nEdges = cc.n_edges;
+            int nEdges = ccsingola.n_edges;
             int edgeMax = cc.size() * (cc.size() - 1) / 2;
             if (edgeMax * CUT_OFF <= nEdges)
             {
