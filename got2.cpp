@@ -5,6 +5,7 @@ using namespace std;
 typedef pair<int, int> entry;
 typedef list<entry> entrylist;
 
+
 struct ccomp {
     vector<int> nodi;
     int n_edges;
@@ -18,9 +19,12 @@ bool **allocMatrix(const int);
 void deallocMatrix(bool **, const int);
 void printMatrix(bool **const, const int);
 // utils per i grafi
+
 vector<ccomp> cc(bool **const, const int, int &);
 vector<int> getCC(const int *, const int, const int);
 int getEdges(bool **const, const vector<int>, const int);
+
+const double CUT_OFF = 0.6;
 
 int N, M;
 
@@ -29,104 +33,129 @@ struct Edge
 {
     int src, dest;
 };
- 
+
 // a structure to represent a connected, undirected
 // and unweighted graph as a collection of edges.
 struct Graph
 {
     // V-> Number of vertices, E-> Number of edges
     int V, E;
- 
+    vector<int> vertici;
+
     // graph is represented as an array of edges.
     // Since the graph is undirected, the edge
     // from src to dest is also edge from dest
     // to src. Both are counted as 1 edge here.
-    Edge* edge;
+    vector<Edge> edge;
 };
- 
+
 // A structure to represent a subset for union-find
 struct subset
 {
     int parent;
     int rank;
 };
- 
+
 // Function prototypes for union-find (These functions are defined
 // after kargerMinCut() )
 int find(struct subset subsets[], int i);
 void Union(struct subset subsets[], int x, int y);
- 
+
 // A very basic implementation of Karger's randomized
 // algorithm for finding the minimum cut. Please note
 // that Karger's algorithm is a Monte Carlo Randomized algo
 // and the cut returned by the algorithm may not be
 // minimum always
-int kargerMinCut(struct Graph* graph)
+int kargerMinCut(struct Graph *graph, int &minSoFar, vector<Edge> &bestEdges)
 {
+
     // Get data of given graph
-    int V = graph->V, E = graph->E;
-    Edge *edge = graph->edge;
- 
+    int V = graph->V;
     // Allocate memory for creating V subsets.
     struct subset *subsets = new subset[V];
- 
+
     // Create V subsets with single elements
     for (int v = 0; v < V; ++v)
     {
         subsets[v].parent = v;
         subsets[v].rank = 0;
     }
- 
+
     // Initially there are V vertices in
     // contracted graph
     int vertices = V;
- 
+
     // Keep contracting vertices until there are
     // 2 vertices.
     while (vertices > 2)
     {
-       // Pick a random edge
-       int i = rand() % E;
- 
-       // Find vertices (or sets) of two corners
-       // of current edge
-       int subset1 = find(subsets, edge[i].src);
-       int subset2 = find(subsets, edge[i].dest);
- 
-       // If two corners belong to same subset,
-       // then no point considering this edge
-       if (subset1 == subset2)
-         continue;
- 
-       // Else contract the edge (or combine the
-       // corners of edge into one vertex)
-       else
-       {
-          printf("Contracting edge %d-%d\n",
-                 edge[i].src, edge[i].dest);
-          vertices--;
-          Union(subsets, subset1, subset2);
-       }
+
+        int random = rand() % V;
+        int verticeRandom = graph->vertici[random];
+        // Pick a random edge
+        // int i = rand() % E;
+        int j = rand() % V;
+        while (g[verticeRandom][graph->vertici[j]] == false)
+        {
+            j++;
+            j = j % V;
+        }
+        // Find vertices (or sets) of two corners
+        // of current edge
+        int subset1 = find(subsets, random);
+        int subset2 = find(subsets, j);
+
+        // If two corners belong to same subset,
+        // then no point considering this edge
+        if (subset1 == subset2)
+            continue;
+
+        // Else contract the edge (or combine the
+        // corners of edge into one vertex)
+        else
+        {
+            // printf("Contracting edge %d-%d\n",
+            //        edge[i].src, edge[i].dest);
+            vertices--;
+            Union(subsets, subset1, subset2);
+        }
     }
- 
+
     // Now we have two vertices (or subsets) left in
     // the contracted graph, so count the edges between
     // two components and return the count.
     int cutedges = 0;
-    for (int i=0; i<E; i++)
+    vector<Edge> currentEdge;
+
+    // Cycle on the vertexes to check if there is an edge between the two vertexes
+    for (int k = 0; k < V; k++)
     {
-        int subset1 = find(subsets, edge[i].src);
-        int subset2 = find(subsets, edge[i].dest);
-        if (subset1 != subset2) {
-            cout << "Final contraction: " << edge[i].src << " - " << edge[i].dest << endl;
-            cutedges++;
+        for (int l = k + 1; l < V; l++)
+        {
+            if (g[graph->vertici[k]][graph->vertici[l]] == true)
+            {
+                int subset1 = find(subsets, k);
+                int subset2 = find(subsets, l);
+                if (subset1 != subset2)
+                {
+                    struct Edge *e = new Edge();
+                    e->src = graph->vertici[k];
+                    e->dest = graph->vertici[l];
+                    currentEdge.push_back(*e);
+                    cutedges++;
+                }
+            }
         }
-          
     }
- 
+    if (cutedges < minSoFar)
+    {
+        minSoFar = cutedges;
+        bestEdges = currentEdge;
+    }
+    // free(currentEdge);
     return cutedges;
 }
- 
+
 // A utility function to find set of an element i
 // (uses path compression technique)
 int find(struct subset subsets[], int i)
@@ -134,26 +163,26 @@ int find(struct subset subsets[], int i)
     // find root and make root as parent of i
     // (path compression)
     if (subsets[i].parent != i)
-      subsets[i].parent =
-             find(subsets, subsets[i].parent);
- 
+        subsets[i].parent =
+            find(subsets, subsets[i].parent);
+
     return subsets[i].parent;
 }
- 
+
 // A function that does union of two sets of x and y
 // (uses union by rank)
 void Union(struct subset subsets[], int x, int y)
 {
     int xroot = find(subsets, x);
     int yroot = find(subsets, y);
- 
+
     // Attach smaller rank tree under root of high
     // rank tree (Union by Rank)
     if (subsets[xroot].rank < subsets[yroot].rank)
         subsets[xroot].parent = yroot;
     else if (subsets[xroot].rank > subsets[yroot].rank)
         subsets[yroot].parent = xroot;
- 
+
     // If ranks are same, then make one as root and
     // increment its rank by one
     else
@@ -162,14 +191,13 @@ void Union(struct subset subsets[], int x, int y)
         subsets[xroot].rank++;
     }
 }
- 
+
 // Creates a graph with V vertices and E edges
-struct Graph* createGraph(int V, int E)
+struct Graph *createGraph(int V, int E)
 {
-    Graph* graph = new Graph;
+    Graph *graph = new Graph;
     graph->V = V;
     graph->E = E;
-    graph->edge = new Edge[E];
     return graph;
 }
 
@@ -179,7 +207,6 @@ int main(int argc, char *argv[])
     in.open("input.txt");
     ofstream out("output.txt");
 
-    bool **g;
     in >> N >> M;
 
 #ifdef IMG
@@ -194,7 +221,7 @@ int main(int argc, char *argv[])
 
     // inizializzo il grafo
     g = allocMatrix(N);
-    struct Graph* graph = createGraph(N, M);
+    struct Graph *graph = createGraph(N, M);
     // defaults
     for (int i = 0; i < N; i++)
     {
@@ -212,16 +239,13 @@ int main(int argc, char *argv[])
         }
     }
 
-
-    for (int i=0; i<M; i++) {
+    for (int i = 0; i < M; i++)
+    {
         // NB: il grafo non è orientato
         int u, v;
         in >> u >> v;
         g[u][v] = true;
         g[v][u] = true;
-        graph->edge[i].src = u;
-        graph->edge[i].dest = v;
-
 
 #ifdef IMG
         dot << u << " -- " << v << ";\n";
@@ -236,7 +260,7 @@ int main(int argc, char *argv[])
 
     // ---------------- SOLUZIONE ----------------
 
-    const pair<entrylist,entrylist> S = sol(g, N);
+    const pair<entrylist, entrylist> S = sol(N);
     // ------------- FINE SOLUZIONE --------------
 
     printsol(&out, S);
@@ -275,20 +299,68 @@ const pair<entrylist, entrylist> dummysol(const int);
  * @return una coppia di liste (As e Rs), ognuna di esse contiene
  *  delle coppie di interi che rappresentano un arco aggiunto/eliminato
  */
-const pair<entrylist,entrylist> sol(bool **const g, const int N) {
+const pair<entrylist, entrylist> sol(const int N)
+{
+    bool finish = false;
 
     entrylist As, Rs;
-    int n_componenti;
+
+    while (!finish)
+    {
+        finish = true;
+      int n_componenti;
     vector<ccomp> ccs = cc(g, N, n_componenti);
     
     #ifdef DEBUG
     cout << "le componenti connesse sono " << n_componenti << endl;
     #endif
 
-    for (ccomp cc : ccs) {
+    for (ccomp ccsingola : ccs) {
 
         // SOLUZIONE SULLA COMPONENTE  CONNESSA i-esima
         cout << cc.nodi.size() << " con n archi = " << cc.n_edges << endl; 
+
+            vector<int> cc = ccsingola.nodi;
+            // Qui avremo il numero di archi della CC
+            // DA CAMBIARE DA 0 A NUMERO DEGLI ARCHI DELLA CC
+            int nEdges = cc.n_edges;
+            int edgeMax = cc.size() * (cc.size() - 1) / 2;
+            if (edgeMax * CUT_OFF <= nEdges)
+            {
+                // HERE I ADD ALL THE EDGES
+                for (int i = 0; i < cc.size(); i++)
+                {
+                    for (int j = i + 1; j < cc.size(); j++)
+                    {
+                        As.push_back(make_pair(cc[i], cc[j]));
+                    }
+                }
+            }
+            else
+            {
+                //If one time I broke the graph I have to repeat the process
+                finish = false;
+                struct Graph *graph = createGraph(cc.size(), cc.size() * (cc.size() - 1));
+                graph->vertici = cc;
+                int minSoFar = INT_MAX;
+                vector<Edge> minEdge;
+                for (int i = 0; i < cc.size() * cc.size(); i++)
+                {
+                    kargerMinCut(graph, minSoFar, minEdge);
+                }
+                // Print the midEdges
+                cout << "Min cut found by Karger's randomized algo is "
+                     << minSoFar << endl;
+                for (int i = 0; i < minSoFar; i++)
+                {
+                    // I delete che edges found
+                    cout << minEdge[i].src << " - " << minEdge[i].dest << endl;
+                    Rs.push_back(make_pair(cc[minEdge[i].src], cc[minEdge[i].dest]));
+                    g[minEdge[i].src][minEdge[i].dest] = false;
+                    g[minEdge[i].dest][minEdge[i].src] = false;
+                }
+            }
+        }
     }
 
     return make_pair(As, Rs);
@@ -307,7 +379,8 @@ const pair<entrylist, entrylist> dummysol(const int N)
     return make_pair(As, Rs);
 };
 
-void printsol (ofstream *out, pair<entrylist, entrylist> S) {
+void printsol(ofstream *out, pair<entrylist, entrylist> S)
+{
 
     // stampo la soluzione
     *out << S.first.size() << " " << S.second.size() << endl;
@@ -326,28 +399,32 @@ void printsol (ofstream *out, pair<entrylist, entrylist> S) {
     *out << "***" << endl;
 }
 
-
 int ccdfs(bool **const, const int, const int, const int, int *);
 
 // graph utilts
 vector<ccomp> cc(bool **const g, const int N, int &n_componenti) {
+
     // creo lo stack e lo riempio con tutti i nodi
     stack<int> s;
-    for (int i=0; i<N; i++) s.push(i);
+    for (int i = 0; i < N; i++)
+        s.push(i);
 
-    // definisco l'array IDs 
+    // definisco l'array IDs
     int *id = new int[N];
     n_componenti = 0;
+
     vector<int> edges;
     for (int i=0; i<N; i++) id[i] = 0;
 
     // finché lo stack non è vuoto
-    while (!s.empty()) {
+    while (!s.empty())
+    {
         // prendo il primo nodo
         int u = s.top();
         s.pop();
 
-        if (id[u] == 0) {
+        if (id[u] == 0)
+        {
             n_componenti++;
             edges.push_back(ccdfs(g, N, n_componenti, u, id)/2);
         }
@@ -382,6 +459,7 @@ int ccdfs(bool **const g, const int N, const int conta, const int node, int *id)
     }
     return edges;
 }
+
 
 bool **allocMatrix(const int N) {
     bool **matrix = new bool*[N];
