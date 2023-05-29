@@ -5,18 +5,24 @@ using namespace std;
 typedef pair<int, int> entry;
 typedef list<entry> entrylist;
 
-const pair<entrylist, entrylist> sol(const int);
-void printsol(ofstream *, pair<entrylist, entrylist>);
 
-bool **g;
+struct ccomp {
+    vector<int> nodi;
+    int n_edges;
+};
+
+const pair<entrylist,entrylist> sol(bool **const, const int);
+void printsol(ofstream *, pair<entrylist,entrylist>);
 
 // utils
 bool **allocMatrix(const int);
 void deallocMatrix(bool **, const int);
 void printMatrix(bool **const, const int);
 // utils per i grafi
-int *cc(bool **const, const int, int &);
+
+vector<ccomp> cc(bool **const, const int, int &);
 vector<int> getCC(const int *, const int, const int);
+int getEdges(bool **const, const vector<int>, const int);
 
 const double CUT_OFF = 0.6;
 
@@ -298,21 +304,26 @@ const pair<entrylist, entrylist> sol(const int N)
     bool finish = false;
 
     entrylist As, Rs;
+
     while (!finish)
     {
         finish = true;
-        int n_componenti, *id = cc(g, N, n_componenti);
-        #ifdef DEBUG
-                cout << "le componenti connesse sono " << n_componenti << endl;
-        #endif
+      int n_componenti;
+    vector<ccomp> ccs = cc(g, N, n_componenti);
+    
+    #ifdef DEBUG
+    cout << "le componenti connesse sono " << n_componenti << endl;
+    #endif
 
-        for (int c = 1; c <= n_componenti; c++)
-        {
-            vector<int> cc = getCC(id, N, c);
+    for (ccomp ccsingola : ccs) {
 
+        // SOLUZIONE SULLA COMPONENTE  CONNESSA i-esima
+        cout << cc.nodi.size() << " con n archi = " << cc.n_edges << endl; 
+
+            vector<int> cc = ccsingola.nodi;
             // Qui avremo il numero di archi della CC
             // DA CAMBIARE DA 0 A NUMERO DEGLI ARCHI DELLA CC
-            int nEdges = 0;
+            int nEdges = cc.n_edges;
             int edgeMax = cc.size() * (cc.size() - 1) / 2;
             if (edgeMax * CUT_OFF <= nEdges)
             {
@@ -388,11 +399,11 @@ void printsol(ofstream *out, pair<entrylist, entrylist> S)
     *out << "***" << endl;
 }
 
-void ccdfs(bool **const, const int, const int, const int, int *);
+int ccdfs(bool **const, const int, const int, const int, int *);
 
 // graph utilts
-int *cc(bool **const g, const int N, int &n_componenti)
-{
+vector<ccomp> cc(bool **const g, const int N, int &n_componenti) {
+
     // creo lo stack e lo riempio con tutti i nodi
     stack<int> s;
     for (int i = 0; i < N; i++)
@@ -401,8 +412,9 @@ int *cc(bool **const g, const int N, int &n_componenti)
     // definisco l'array IDs
     int *id = new int[N];
     n_componenti = 0;
-    for (int i = 0; i < N; i++)
-        id[i] = 0;
+
+    vector<int> edges;
+    for (int i=0; i<N; i++) id[i] = 0;
 
     // finché lo stack non è vuoto
     while (!s.empty())
@@ -414,37 +426,44 @@ int *cc(bool **const g, const int N, int &n_componenti)
         if (id[u] == 0)
         {
             n_componenti++;
-            ccdfs(g, N, n_componenti, u, id);
+            edges.push_back(ccdfs(g, N, n_componenti, u, id)/2);
         }
     }
-    return id;
+
+    // vettore delle componenti connesse
+    vector<ccomp> ccs;
+    for (int i=0; i<n_componenti; i++) {
+        ccomp c;
+        c.n_edges = edges[i];
+        ccs.push_back(c);
+    }
+
+    // riempio le cc
+    for (int i=0; i<=N; i++)
+        ccs[id[i]-1].nodi.push_back(i);
+
+
+    return ccs;
 }
 
-void ccdfs(bool **const g, const int N, const int conta, const int node, int *id)
-{
+int ccdfs(bool **const g, const int N, const int conta, const int node, int *id) {
+    int edges = 0;
     id[node] = conta;
-    for (int i = 0; i < N; i++)
-    {
-        if (g[node][i] && id[i] == 0)
-        {
-            ccdfs(g, N, conta, i, id);
+    for (int i=0; i<N; i++) {
+        if (g[node][i]) {
+            if (id[i] == 0) {
+                edges += 1 + ccdfs(g, N, conta, i, id);
+            } else if (conta == id[i])
+                edges++;
         }
     }
+    return edges;
 }
 
-vector<int> getCC(const int *id, const int N, const int comp)
-{
-    vector<int> cc;
-    for (int i = 0; i < N; i++)
-        if (id[i] == comp)
-            cc.push_back(i);
-    return cc;
-}
 
-bool **allocMatrix(const int N)
-{
-    bool **matrix = new bool *[N];
-    for (int i = 0; i < N; i++)
+bool **allocMatrix(const int N) {
+    bool **matrix = new bool*[N];
+    for (int i = 0; i<N; i++)
         matrix[i] = new bool[N];
     return matrix;
 }
