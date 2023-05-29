@@ -68,6 +68,7 @@ void Union(struct subset subsets[], int x, int y);
 // that Karger's algorithm is a Monte Carlo Randomized algo
 // and the cut returned by the algorithm may not be
 // minimum always
+int padriMigliori[2];
 int kargerMinCut(struct Graph *graph, int &minSoFar, vector<Edge> &bestEdges)
 {
 
@@ -80,7 +81,7 @@ int kargerMinCut(struct Graph *graph, int &minSoFar, vector<Edge> &bestEdges)
     for (int v = 0; v < V; ++v)
     {
         subsets[v].parent = v;
-        subsets[v].rank = 0;
+        subsets[v].rank = 1;
     }
 
     // Initially there are V vertices in
@@ -149,10 +150,32 @@ int kargerMinCut(struct Graph *graph, int &minSoFar, vector<Edge> &bestEdges)
             }
         }
     }
+    int padri[2];
+    int f = 0;
+    for (int i = 0; i < V; i++)
+    {
+        if (subsets[i].parent == i)
+        {
+            padri[f] = i;
+            f++;
+        }
+    }
     if (cutedges < minSoFar)
     {
         minSoFar = cutedges;
         bestEdges = currentEdge;
+        padriMigliori[0] = subsets[padri[0]].rank;
+        padriMigliori[1] = subsets[padri[1]].rank;
+    }
+    else if (cutedges == minSoFar)
+    {
+        if (abs(subsets[padri[0]].rank - subsets[padri[1]].rank) < abs(padriMigliori[0] - padriMigliori[1]))
+        {
+            minSoFar = cutedges;
+            bestEdges = currentEdge;
+            padriMigliori[0] = subsets[padri[0]].rank;
+            padriMigliori[1] = subsets[padri[1]].rank;
+        }
     }
     // free(currentEdge);
     return cutedges;
@@ -181,16 +204,23 @@ void Union(struct subset subsets[], int x, int y)
     // Attach smaller rank tree under root of high
     // rank tree (Union by Rank)
     if (subsets[xroot].rank < subsets[yroot].rank)
+    {
+
         subsets[xroot].parent = yroot;
+        subsets[yroot].rank += subsets[xroot].rank;
+    }
     else if (subsets[xroot].rank > subsets[yroot].rank)
+    {
         subsets[yroot].parent = xroot;
+        subsets[xroot].rank += subsets[yroot].rank;
+    }
 
     // If ranks are same, then make one as root and
     // increment its rank by one
     else
     {
         subsets[yroot].parent = xroot;
-        subsets[xroot].rank++;
+        subsets[xroot].rank += subsets[yroot].rank;
     }
 }
 
@@ -215,7 +245,7 @@ int main(int argc, char *argv[])
     // inizio a stampare lo scheletro del grafo
     ofstream dot;
     dot.open("graph.dot");
-    dot << "strict graph {\n";
+    dot << "strict graph {\n[minlen=5]\n";
     // beatufiy=true; aggiungere per avere un grafo che gira attorno all'origine
     for (int i = 0; i < N; i++)
         dot << i << ";\n";
@@ -311,11 +341,10 @@ const pair<entrylist, entrylist> sol(const int N)
     {
         finish = true;
         int n_componenti;
-        cout << "CCS" << endl;
         vector<ccomp> ccs = cc(g, N, n_componenti);
-        #ifdef DEBUG
-                cout << "le componenti connesse sono " << n_componenti << endl;
-        #endif
+#ifdef DEBUG
+        cout << "le componenti connesse sono " << n_componenti << endl;
+#endif
 
         for (ccomp ccsingola : ccs)
         {
@@ -345,22 +374,21 @@ const pair<entrylist, entrylist> sol(const int N)
                 graph->vertici = cc;
                 int minSoFar = INT_MAX;
                 vector<Edge> minEdge;
-                for (int i = 0; i < cc.size() * cc.size(); i++)
+                for (int i = 0; i < cc.size() ; i++)
                 {
                     kargerMinCut(graph, minSoFar, minEdge);
                 }
                 // Print the midEdges
-                cout << "Min cut found by Karger's randomized algo is "
-                     << minSoFar << endl;
+                // cout << "Min cut found by Karger's randomized algo is "
+                //      << minSoFar << endl;
                 for (int i = 0; i < minSoFar; i++)
                 {
                     // I delete the edges found
-                    cout << minEdge[i].src << " - " << minEdge[i].dest << endl;
+                    // cout << minEdge[i].src << " - " << minEdge[i].dest << endl;
 
-                    Rs.push_back(make_pair(cc[minEdge[i].src], cc[minEdge[i].dest]));
+                    Rs.push_back(make_pair(minEdge[i].src, minEdge[i].dest));
                     g[minEdge[i].src][minEdge[i].dest] = false;
                     g[minEdge[i].dest][minEdge[i].src] = false;
-                    
                 }
             }
         }

@@ -2,6 +2,12 @@ run: got2.cpp input.txt
 	@g++ got2.cpp -std=c++11 -o got2.out
 	@./got2.out
 
+do: got2.cpp
+	@g++ got2.cpp -std=c++11 -o got2.out
+	@./got2.out input17.txt output1.txt
+	@./got2.out input18.txt output3.txt
+	@./got2.out input19.txt output2.txt
+
 debug: got2.cpp input.txt
 	@g++ got2.cpp -D DEBUG -o got2.out
 	@./got2.out
@@ -29,3 +35,5 @@ input.txt:
 
 got2.cpp:
 	@echo "per caso hai rinominato il file cpp?"
+
+.PHONY: do
