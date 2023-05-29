@@ -1,8 +1,3 @@
-#include <iostream>
-#include <fstream>
-#include <utility>
-#include <list>
-#include <iomanip>
 #include <bits/stdc++.h>
 
 using namespace std;
@@ -10,13 +5,16 @@ using namespace std;
 typedef pair<int, int> entry;
 typedef list<entry> entrylist;
 
-const pair<entrylist, entrylist> sol(bool **const, const int, int &, int &);
-void printsol(ofstream *, int, int, pair<entrylist, entrylist>);
+const pair<entrylist,entrylist> sol(bool **const, const int);
+void printsol(ofstream *, pair<entrylist,entrylist>);
 
 // utils
 bool **allocMatrix(const int);
 void deallocMatrix(bool **, const int);
 void printMatrix(bool **const, const int);
+// utils per i grafi
+int * cc(bool **const, const int, int &);
+vector<int> getCC(const int *, const int, const int);
 
 int N, M;
 
@@ -208,8 +206,8 @@ int main(int argc, char *argv[])
         }
     }
 
-    for (int i = 0; i < M; i++)
-    {
+
+    for (int i=0; i<M; i++) {
         // NB: il grafo non è orientato
         int u, v;
         in >> u >> v;
@@ -232,16 +230,10 @@ int main(int argc, char *argv[])
 
     // ---------------- SOLUZIONE ----------------
 
-    // int A = 0, R = 0;
-    // const pair<entrylist,entrylist> S = sol(g, N, A, R);
-    // printsol(&out, A, R, S);
-    vector<int> verticesToCut; // List of vertices to apply the algorithm for
-    for (int i = 0; i < N; i++)
-    {
-        verticesToCut.push_back(i);
-    }
-    vector<Edge> cutEdges;
-    int minCut = kargerMinCut(graph);
+    const pair<entrylist,entrylist> S = sol(g, N);
+    // ------------- FINE SOLUZIONE --------------
+
+    printsol(&out, S);
 
     cout << "Minimum cut found by Karger-Stein algorithm: " << minCut << endl;
     cout << "Edges forming the minimum cut: " << endl;
@@ -284,10 +276,22 @@ const pair<entrylist, entrylist> dummysol(const int);
  * @return una coppia di liste (As e Rs), ognuna di esse contiene
  *  delle coppie di interi che rappresentano un arco aggiunto/eliminato
  */
-const pair<entrylist, entrylist> sol(bool **const g, const int N, int &A, int &R)
-{
+const pair<entrylist,entrylist> sol(bool **const g, const int N) {
+
     entrylist As, Rs;
-    return dummysol(N);
+    int n_componenti, *id = cc(g, N, n_componenti);
+    
+    #ifdef DEBUG
+    cout << "le componenti connesse sono " << n_componenti << endl;
+    #endif
+
+    for (int c=1; c<=n_componenti; c++) {
+        vector<int> cc = getCC(id, N, c);
+
+        // SOLUZIONE SULLA COMPONENTE  CONNESSA i-esima
+    }
+
+    return make_pair(As, Rs);
 }
 
 const pair<entrylist, entrylist> dummysol(const int N)
@@ -303,10 +307,10 @@ const pair<entrylist, entrylist> dummysol(const int N)
     return make_pair(As, Rs);
 };
 
-void printsol(ofstream *out, int A, int R, pair<entrylist, entrylist> S)
-{
+void printsol (ofstream *out, pair<entrylist, entrylist> S) {
+
     // stampo la soluzione
-    *out << A << " " << R << endl;
+    *out << S.first.size() << " " << S.second.size() << endl;
 
     for (entry couple : S.first)
     {
@@ -322,11 +326,55 @@ void printsol(ofstream *out, int A, int R, pair<entrylist, entrylist> S)
     *out << "***" << endl;
 }
 
-// ----------------------------- UTILS -----------------------------
-bool **allocMatrix(const int N)
-{
-    bool **matrix = new bool *[N];
-    for (int i = 0; i < N; i++)
+
+void ccdfs(bool **const, const int, const int, const int, int *);
+
+// graph utilts
+int * cc(bool **const g, const int N, int &n_componenti) {
+    // creo lo stack e lo riempio con tutti i nodi
+    stack<int> s;
+    for (int i=0; i<N; i++) s.push(i);
+
+    // definisco l'array IDs 
+    int *id = new int[N];
+    n_componenti = 0;
+    for (int i=0; i<N; i++) id[i] = 0;
+
+    // finché lo stack non è vuoto
+    while (!s.empty()) {
+        // prendo il primo nodo
+        int u = s.top();
+        s.pop();
+
+        if (id[u] == 0) {
+            n_componenti++;
+            ccdfs(g, N, n_componenti, u, id);
+        }
+    }
+    return id;
+}
+
+void ccdfs(bool **const g, const int N, const int conta, const int node, int *id) {
+    id[node] = conta;
+    for (int i=0; i<N; i++) {
+        if (g[node][i] && id[i] == 0) {
+            ccdfs(g, N, conta, i, id);
+        }
+    }
+}
+
+vector<int> getCC(const int *id, const int N, const int comp) {
+    vector<int> cc;
+    for (int i=0; i<N; i++)
+        if (id[i] == comp)
+            cc.push_back(i);
+    return cc;
+}
+
+
+bool **allocMatrix(const int N) {
+    bool **matrix = new bool*[N];
+    for (int i = 0; i<N; i++)
         matrix[i] = new bool[N];
     return matrix;
 }
