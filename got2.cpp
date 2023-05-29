@@ -64,48 +64,66 @@ struct subset
 int find(struct subset subsets[], int i);
 void Union(struct subset subsets[], int x, int y);
 
+// Hash function
+struct hashFunction
+    {
+        size_t operator()(const pair<int , int> &x) const{
+        return x.first ^ x.second;
+    }
+
+};
 // A very basic implementation of Karger's randomized
 // algorithm for finding the minimum cut. Please note
 // that Karger's algorithm is a Monte Carlo Randomized algo
 // and the cut returned by the algorithm may not be
 // minimum always
 int padriMigliori[2];
-int kargerMinCut(struct Graph *graph, int &minSoFar, vector<Edge> &bestEdges)
+int kargerMinCut(struct Graph *graph, int &minSoFar, vector<Edge> &bestEdges, vector<entry> archi)
 {
-
     // Get data of given graph
     int V = graph->V;
     // Allocate memory for creating V subsets.
-    struct subset *subsets = new subset[V];
-
+    struct subset *subsets = new subset[N];
+    for (int i = 0; i<N; i++) {
+        subsets[i].parent = -1;
+        subsets[i].rank = 0;
+    }
     // Create V subsets with single elements
+    vector<int> vertici = graph->vertici;
     for (int v = 0; v < V; ++v)
     {
-        subsets[v].parent = v;
-        subsets[v].rank = 1;
+        subsets[vertici[v]].parent = vertici[v];
+        subsets[vertici[v]].rank = 1;
     }
-
+    shuffle(archi.begin(), archi.end(), default_random_engine(rand() % 1000));
     // Initially there are V vertices in
     // contracted graph
     int vertices = V;
 
     // Keep contracting vertices until there are
     // 2 vertices.
-    while (vertices > 2)
+    while (vertices > 2 && !archi.empty())
     {
-
-        int random = rand() % V;
-        int verticeRandom = graph->vertici[random];
-        // Pick a random edge
-        // int i = rand() % E;
-        int j = rand() % V;
-        while (g[verticeRandom][graph->vertici[j]] == false)
-        {
-            j++;
-            j = j % V;
-        }
+        entry arco = archi.back();
+        archi.pop_back();
+        /*
+                int random = rand() % V;
+                int verticeRandom = graph->vertici[random];
+                // Pick a random edge
+                // int i = rand() % E;
+                int j = rand() % V;
+                while (g[verticeRandom][graph->vertici[j]] == false)
+                {
+                    j++;
+                    j = j % V;
+                }
+                */
+        int random = arco.first;
+        int j = arco.second;
+        //cout << "random: " << random << " j: " << j << endl;
         // Find vertices (or sets) of two corners
         // of current edge
+        //cout << random << " " << j << endl;
         int subset1 = find(subsets, random);
         int subset2 = find(subsets, j);
 
@@ -132,28 +150,34 @@ int kargerMinCut(struct Graph *graph, int &minSoFar, vector<Edge> &bestEdges)
     vector<Edge> currentEdge;
 
     // Cycle on the vertexes to check if there is an edge between the two vertexes
-    for (int k = 0; k < V; k++)
+    // for (int k = 0; k < V; k++)
+    // {
+    //     for (int l = k + 1; l < V; l++)
+    //     {
+    //         if (g[graph->vertici[k]][graph->vertici[l]] == true)
+    //         {
+    for (auto arco : archi)
     {
-        for (int l = k + 1; l < V; l++)
+        int k = arco.first;
+        int l = arco.second;
+        int subset1 = find(subsets, k);
+        int subset2 = find(subsets, l);
+        if (subset1 != subset2)
         {
-            if (g[graph->vertici[k]][graph->vertici[l]] == true)
-            {
-                int subset1 = find(subsets, k);
-                int subset2 = find(subsets, l);
-                if (subset1 != subset2)
-                {
-                    struct Edge *e = new Edge();
-                    e->src = graph->vertici[k];
-                    e->dest = graph->vertici[l];
-                    currentEdge.push_back(*e);
-                    cutedges++;
-                }
-            }
+            struct Edge *e = new Edge();
+            e->src = k;
+            e->dest = l;
+            currentEdge.push_back(*e);
+            cutedges++;
         }
     }
+
+    //         }
+    //     }
+    // }
     int padri[2];
     int f = 0;
-    for (int i = 0; i < V; i++)
+    for (int i = 0; i < N; i++)
     {
         if (subsets[i].parent == i)
         {
@@ -178,6 +202,7 @@ int kargerMinCut(struct Graph *graph, int &minSoFar, vector<Edge> &bestEdges)
             padriMigliori[1] = subsets[padri[1]].rank;
         }
     }
+    free(subsets);
     // free(currentEdge);
     return cutedges;
 }
@@ -237,6 +262,8 @@ struct Graph *createGraph(int V, int E)
 int main(int argc, char *argv[])
 {
     ifstream in;
+    // in.open(argv[1] == NULL ? "input.txt": argv[1]);
+    // ofstream out(argv[2] == NULL ? "output.txt": argv[2]);
     in.open("input.txt");
     ofstream out("output.txt");
 
@@ -350,9 +377,11 @@ const pair<entrylist, entrylist> sol(const int N)
         for (ccomp ccsingola : ccs)
         {
             vector<int> cc = ccsingola.nodi;
+            vector<entry> archi = ccsingola.edges;
             // Qui avremo il numero di archi della CC
-            int nEdges = ccsingola.n_edges;
             int edgeMax = cc.size() * (cc.size() - 1) / 2;
+            int nEdges = ccsingola.n_edges;
+            //cout << "ccsingola.n_edges: " << ccsingola.n_edges << "  edgeMax" << edgeMax << endl;
             if (edgeMax * CUT_OFF <= nEdges)
             {
                 // HERE I ADD ALL THE EDGES
@@ -363,6 +392,8 @@ const pair<entrylist, entrylist> sol(const int N)
                         if (g[cc[i]][cc[j]] == false)
                         {
                             As.push_back(make_pair(cc[i], cc[j]));
+                            g[cc[i]][cc[j]] = true;
+                            g[cc[j]][cc[i]] = true;
                         }
                     }
                 }
@@ -375,9 +406,9 @@ const pair<entrylist, entrylist> sol(const int N)
                 graph->vertici = cc;
                 int minSoFar = INT_MAX;
                 vector<Edge> minEdge;
-                for (int i = 0; i < cc.size() ; i++)
+                for (int i = 0; i < cc.size(); i++)
                 {
-                    kargerMinCut(graph, minSoFar, minEdge);
+                    kargerMinCut(graph, minSoFar, minEdge, archi);
                 }
                 // Print the midEdges
                 // cout << "Min cut found by Karger's randomized algo is "
@@ -385,13 +416,14 @@ const pair<entrylist, entrylist> sol(const int N)
                 for (int i = 0; i < minSoFar; i++)
                 {
                     // I delete the edges found
-                    // cout << minEdge[i].src << " - " << minEdge[i].dest << endl;
+                    //cout << minEdge[i].src << " - " << minEdge[i].dest << endl;
 
                     Rs.push_back(make_pair(minEdge[i].src, minEdge[i].dest));
                     g[minEdge[i].src][minEdge[i].dest] = false;
                     g[minEdge[i].dest][minEdge[i].src] = false;
                 }
             }
+            
         }
     }
 
@@ -430,8 +462,30 @@ void printsol(ofstream *out, pair<entrylist, entrylist> S)
     // chiudo la stampa
     *out << "***" << endl;
 }
+int ccdfs(bool **const g, const int N, const int conta, const int node, int *id, unordered_set<entry, hashFunction> &edges)
+{
+    int n_edges = 0;
+    id[node] = conta;
+    for (int i = 0; i < N; i++)
+    {
+        if (g[node][i] && node != i)
+        {
+            if (node < i) {
+                edges.insert(make_pair(node, i));
+            } else {
+                edges.insert(make_pair(i, node));
+            }
+            if (id[i] == 0)
+            {
+                n_edges += 1 + ccdfs(g, N, conta, i, id, edges);
+            }
+            else if (conta == id[i])
+                n_edges++;
+        }
+    }
+    return n_edges;
+}
 
-int ccdfs(bool **const, const int, const int, const int, int *, vector<entry> &);
 
 // graph utilts
 vector<ccomp> cc(bool **const g, const int N, int &n_componenti)
@@ -447,7 +501,7 @@ vector<ccomp> cc(bool **const g, const int N, int &n_componenti)
     n_componenti = 0;
 
     vector<int> n_edges;
-    vector<vector<entry>> edges;
+    vector<unordered_set<entry, hashFunction>> edges;
     for (int i = 0; i < N; i++)
         id[i] = 0;
 
@@ -461,7 +515,7 @@ vector<ccomp> cc(bool **const g, const int N, int &n_componenti)
         if (id[u] == 0)
         {
             n_componenti++;
-            vector<entry> Es;
+            unordered_set<entry, hashFunction> Es;
             n_edges.push_back(ccdfs(g, N, n_componenti, u, id, Es) / 2);
             edges.push_back(Es);
         }
@@ -472,7 +526,9 @@ vector<ccomp> cc(bool **const g, const int N, int &n_componenti)
     {
         ccomp c;
         c.n_edges = n_edges[i];
-        c.edges = edges[i];
+        vector<entry> newV(edges[i].begin(), edges[i].end());
+        unordered_set<entry, hashFunction> ().swap(edges[i]);
+        c.edges = newV;
         ccs.push_back(c);
     }
 
@@ -482,25 +538,6 @@ vector<ccomp> cc(bool **const g, const int N, int &n_componenti)
     return ccs;
 }
 
-int ccdfs(bool **const g, const int N, const int conta, const int node, int *id, vector<entry> &edges)
-{
-    int n_edges = 0;
-    id[node] = conta;
-    for (int i = 0; i < N; i++)
-    {
-        if (g[node][i] && node != i)
-        {
-            edges.push_back(make_pair(node, i));
-            if (id[i] == 0)
-            {
-                n_edges += 1 + ccdfs(g, N, conta, i, id, edges);
-            }
-            else if (conta == id[i])
-                n_edges++;
-        }
-    }
-    return n_edges;
-}
 
 bool **allocMatrix(const int N)
 {
@@ -520,12 +557,12 @@ void deallocMatrix(bool **matrix, const int N)
 void printMatrix(bool **const matrix, const int N)
 {
     cout << endl
-        << setw(4) << "";
+         << setw(4) << "";
     for (int i = 0; i < N; i++)
         cout << setw(3) << i;
     cout << endl
-        << setw(3) << ""
-        << "╭";
+         << setw(3) << ""
+         << "╭";
     for (int i = 0; i < N; i++)
         cout << "───";
     cout << "──╮" << endl;
@@ -539,5 +576,5 @@ void printMatrix(bool **const matrix, const int N)
     }
 
     cout << setw(3) << ""
-        << "╰─" << endl;
+         << "╰─" << endl;
 }
