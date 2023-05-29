@@ -235,13 +235,6 @@ int main(int argc, char *argv[])
 
     printsol(&out, S);
 
-    cout << "Minimum cut found by Karger-Stein algorithm: " << minCut << endl;
-    cout << "Edges forming the minimum cut: " << endl;
-    for (const auto &edge : cutEdges)
-    {
-        cout << edge.src << " -- " << edge.dest << endl;
-    }
-
     // ------------- FINE SOLUZIONE --------------
 
 #ifdef IMG
