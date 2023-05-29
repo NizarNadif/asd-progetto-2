@@ -5,6 +5,11 @@ using namespace std;
 typedef pair<int, int> entry;
 typedef list<entry> entrylist;
 
+struct ccomp {
+    vector<int> nodi;
+    int n_edges;
+};
+
 const pair<entrylist,entrylist> sol(bool **const, const int);
 void printsol(ofstream *, pair<entrylist,entrylist>);
 
@@ -13,8 +18,9 @@ bool **allocMatrix(const int);
 void deallocMatrix(bool **, const int);
 void printMatrix(bool **const, const int);
 // utils per i grafi
-int * cc(bool **const, const int, int &);
+vector<ccomp> cc(bool **const, const int, int &);
 vector<int> getCC(const int *, const int, const int);
+int getEdges(bool **const, const vector<int>, const int);
 
 int N, M;
 
@@ -272,16 +278,17 @@ const pair<entrylist, entrylist> dummysol(const int);
 const pair<entrylist,entrylist> sol(bool **const g, const int N) {
 
     entrylist As, Rs;
-    int n_componenti, *id = cc(g, N, n_componenti);
+    int n_componenti;
+    vector<ccomp> ccs = cc(g, N, n_componenti);
     
     #ifdef DEBUG
     cout << "le componenti connesse sono " << n_componenti << endl;
     #endif
 
-    for (int c=1; c<=n_componenti; c++) {
-        vector<int> cc = getCC(id, N, c);
+    for (ccomp cc : ccs) {
 
         // SOLUZIONE SULLA COMPONENTE  CONNESSA i-esima
+        cout << cc.nodi.size() << " con n archi = " << cc.n_edges << endl; 
     }
 
     return make_pair(As, Rs);
@@ -320,10 +327,10 @@ void printsol (ofstream *out, pair<entrylist, entrylist> S) {
 }
 
 
-void ccdfs(bool **const, const int, const int, const int, int *);
+int ccdfs(bool **const, const int, const int, const int, int *);
 
 // graph utilts
-int * cc(bool **const g, const int N, int &n_componenti) {
+vector<ccomp> cc(bool **const g, const int N, int &n_componenti) {
     // creo lo stack e lo riempio con tutti i nodi
     stack<int> s;
     for (int i=0; i<N; i++) s.push(i);
@@ -331,6 +338,7 @@ int * cc(bool **const g, const int N, int &n_componenti) {
     // definisco l'array IDs 
     int *id = new int[N];
     n_componenti = 0;
+    vector<int> edges;
     for (int i=0; i<N; i++) id[i] = 0;
 
     // finché lo stack non è vuoto
@@ -341,29 +349,39 @@ int * cc(bool **const g, const int N, int &n_componenti) {
 
         if (id[u] == 0) {
             n_componenti++;
-            ccdfs(g, N, n_componenti, u, id);
+            edges.push_back(ccdfs(g, N, n_componenti, u, id)/2);
         }
     }
-    return id;
+
+    // vettore delle componenti connesse
+    vector<ccomp> ccs;
+    for (int i=0; i<n_componenti; i++) {
+        ccomp c;
+        c.n_edges = edges[i];
+        ccs.push_back(c);
+    }
+
+    // riempio le cc
+    for (int i=0; i<=N; i++)
+        ccs[id[i]-1].nodi.push_back(i);
+
+
+    return ccs;
 }
 
-void ccdfs(bool **const g, const int N, const int conta, const int node, int *id) {
+int ccdfs(bool **const g, const int N, const int conta, const int node, int *id) {
+    int edges = 0;
     id[node] = conta;
     for (int i=0; i<N; i++) {
-        if (g[node][i] && id[i] == 0) {
-            ccdfs(g, N, conta, i, id);
+        if (g[node][i]) {
+            if (id[i] == 0) {
+                edges += 1 + ccdfs(g, N, conta, i, id);
+            } else if (conta == id[i])
+                edges++;
         }
     }
+    return edges;
 }
-
-vector<int> getCC(const int *id, const int N, const int comp) {
-    vector<int> cc;
-    for (int i=0; i<N; i++)
-        if (id[i] == comp)
-            cc.push_back(i);
-    return cc;
-}
-
 
 bool **allocMatrix(const int N) {
     bool **matrix = new bool*[N];
