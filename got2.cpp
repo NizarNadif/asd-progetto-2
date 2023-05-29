@@ -8,6 +8,7 @@ typedef list<entry> entrylist;
 struct ccomp
 {
     vector<int> nodi;
+    vector<entry> edges;
     int n_edges;
 };
 
@@ -430,7 +431,7 @@ void printsol(ofstream *out, pair<entrylist, entrylist> S)
     *out << "***" << endl;
 }
 
-int ccdfs(bool **const, const int, const int, const int, int *);
+int ccdfs(bool **const, const int, const int, const int, int *, vector<entry> &);
 
 // graph utilts
 vector<ccomp> cc(bool **const g, const int N, int &n_componenti)
@@ -445,7 +446,8 @@ vector<ccomp> cc(bool **const g, const int N, int &n_componenti)
     int *id = new int[N];
     n_componenti = 0;
 
-    vector<int> edges;
+    vector<int> n_edges;
+    vector<vector<entry>> edges;
     for (int i = 0; i < N; i++)
         id[i] = 0;
 
@@ -459,7 +461,9 @@ vector<ccomp> cc(bool **const g, const int N, int &n_componenti)
         if (id[u] == 0)
         {
             n_componenti++;
-            edges.push_back(ccdfs(g, N, n_componenti, u, id) / 2);
+            vector<entry> Es;
+            n_edges.push_back(ccdfs(g, N, n_componenti, u, id, Es) / 2);
+            edges.push_back(Es);
         }
     }
     // vettore delle componenti connesse
@@ -467,7 +471,8 @@ vector<ccomp> cc(bool **const g, const int N, int &n_componenti)
     for (int i = 0; i < n_componenti; i++)
     {
         ccomp c;
-        c.n_edges = edges[i];
+        c.n_edges = n_edges[i];
+        c.edges = edges[i];
         ccs.push_back(c);
     }
 
@@ -477,23 +482,24 @@ vector<ccomp> cc(bool **const g, const int N, int &n_componenti)
     return ccs;
 }
 
-int ccdfs(bool **const g, const int N, const int conta, const int node, int *id)
+int ccdfs(bool **const g, const int N, const int conta, const int node, int *id, vector<entry> &edges)
 {
-    int edges = 0;
+    int n_edges = 0;
     id[node] = conta;
     for (int i = 0; i < N; i++)
     {
-        if (g[node][i])
+        if (g[node][i] && node != i)
         {
+            edges.push_back(make_pair(node, i));
             if (id[i] == 0)
             {
-                edges += 1 + ccdfs(g, N, conta, i, id);
+                n_edges += 1 + ccdfs(g, N, conta, i, id, edges);
             }
             else if (conta == id[i])
-                edges++;
+                n_edges++;
         }
     }
-    return edges;
+    return n_edges;
 }
 
 bool **allocMatrix(const int N)
@@ -514,12 +520,12 @@ void deallocMatrix(bool **matrix, const int N)
 void printMatrix(bool **const matrix, const int N)
 {
     cout << endl
-         << setw(4) << "";
+        << setw(4) << "";
     for (int i = 0; i < N; i++)
         cout << setw(3) << i;
     cout << endl
-         << setw(3) << ""
-         << "╭";
+        << setw(3) << ""
+        << "╭";
     for (int i = 0; i < N; i++)
         cout << "───";
     cout << "──╮" << endl;
@@ -533,5 +539,5 @@ void printMatrix(bool **const matrix, const int N)
     }
 
     cout << setw(3) << ""
-         << "╰─" << endl;
+        << "╰─" << endl;
 }
