@@ -3,6 +3,6 @@
 *.exe
 
 # Outputs default name
-*.txt
+/*.txt
 *.png
 *.dot
